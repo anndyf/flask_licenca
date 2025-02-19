@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Dashboard</h2>
+    <p></p>
+    <p></p>
+    <div class="row">
+        <!-- Total de Licenças -->
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Total Cadastradas</h5>
+                    <h3>{{ total_licencas }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Licenças Expiradas -->
+        <div class="col-md-3">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Expiradas</h5>
+                    <h3>{{ expiradas }}</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Licenças Vencendo em Breve (Maior e Centralizado) -->
+        <div class="col-md-6">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body text-center">
+                    <h4 class="card-title">Vencendo em Breve</h4>
+                    <h2>{{ vencendo_breve }}</h2>
+                    <p>Licenças próximas do vencimento nos próximos 30 dias.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões de Atalho -->
+    <div class="row mt-3">
+        <div class="col-md-4">
+            <a href="{{ url_for('cadastrar_licenca') }}" class="btn btn-success w-100">
+                <i class="fas fa-plus"></i> Cadastrar Licença
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('list_licenses') }}" class="btn btn-primary w-100">
+                <i class="fas fa-list"></i> Listar Licenças
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('list_licenses') }}" class="btn btn-warning w-100">
+                <i class="fas fa-edit"></i> Editar Licenças
+            </a>
+        </div>
+    </div>
+
+    <!-- Lista apenas das próximas ao vencimento -->
+    <div class="mt-4">
+        <h3>Licenças Próximas do Vencimento</h3>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>Ato</th>
+                    <th>Vencimento</th>
+                    <th>Dias Restantes</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for licenca in licencas_vencendo %}
+                <tr>
+                    <td>{{ licenca.empresa }}</td>
+                    <td>{{ licenca.ato }}</td>
+                    <td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if licenca.dias_restantes > 0 %}
+                            {{ licenca.dias_restantes }} dias
+                        {% else %}
+                            <span class="text-danger">Expirado</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-warning">Próxima ao Vencimento</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+{% endblock %}

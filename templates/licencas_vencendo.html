@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Licenças Próximas do Vencimento</h2>
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Empresa</th>
+                <th>Ato</th>
+                <th>Portaria</th>
+                <th>Data de Publicação</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for licenca in licencas %}
+            <tr>
+                <td>{{ licenca.id }}</td>
+                <td>{{ licenca.empresa }}</td>
+                <td>{{ licenca.ato }}</td>
+                <td>{{ licenca.portaria }}</td>
+                <td>{{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</td>
+                <td class="text-danger">{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
+                <td>{{ licenca.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

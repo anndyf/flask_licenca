@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Editar Licença</h2>
+    <form method="POST">
+        <div class="mb-3">
+            <label for="empresa" class="form-label">Empresa</label>
+            <input type="text" class="form-control" id="empresa" name="empresa" value="{{ licenca.empresa }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="ato" class="form-label">Ato</label>
+            <input type="text" class="form-control" id="ato" name="ato" value="{{ licenca.ato }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="portaria" class="form-label">Portaria Nº</label>
+            <input type="text" class="form-control" id="portaria" name="portaria" value="{{ licenca.portaria }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="data_publicacao" class="form-label">Data de Publicação</label>
+            <input type="date" class="form-control" id="data_publicacao" name="data_publicacao" value="{{ licenca.data_publicacao.strftime('%Y-%m-%d') }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="vencimento" class="form-label">Vencimento</label>
+            <input type="date" class="form-control" id="vencimento" name="vencimento" value="{{ licenca.vencimento.strftime('%Y-%m-%d') }}" required>
+        </div>
+        <div class="mb-3">
+            <label for="condicionantes" class="form-label">Condicionantes Ambientais</label>
+            <textarea class="form-control" id="condicionantes" name="condicionantes">{{ licenca.condicionantes }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="prazo_cumprimento" class="form-label">Prazo de Cumprimento</label>
+            <input type="text" class="form-control" id="prazo_cumprimento" name="prazo_cumprimento" value="{{ licenca.prazo_cumprimento }}">
+        </div>
+        <div class="mb-3">
+            <label for="status" class="form-label">Status</label>
+            <input type="text" class="form-control" id="status" name="status" value="{{ licenca.status }}">
+        </div>
+        <div class="mb-3">
+            <label for="observacoes" class="form-label">Observações</label>
+            <textarea class="form-control" id="observacoes" name="observacoes">{{ licenca.observacoes }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-success">Salvar Alterações</button>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

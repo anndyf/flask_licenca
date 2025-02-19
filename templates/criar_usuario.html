@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Novo Usuário</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .back-link {
+            margin-top: 10px;
+            display: block;
+            text-decoration: none;
+            color: #007BFF;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Criar Novo Usuário</h2>
+        <form method="POST">
+            <input type="text" name="username" placeholder="Nome de Usuário" required>
+            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="password" name="password" placeholder="Senha" required>
+            <label>
+                <input type="checkbox" name="is_admin"> Definir como Administrador
+            </label>
+            <button type="submit">Criar Usuário</button>
+        </form>
+        <a class="back-link" href="{{ url_for('dashboard') }}">Voltar para Dashboard</a>
+    </div>
+</body>
+</html>
