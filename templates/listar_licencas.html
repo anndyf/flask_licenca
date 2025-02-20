@@ -1,122 +1,116 @@
-{% extends "base.html" %}
-{% with messages = get_flashed_messages(with_categories=True) %}
-  {% if messages %}
-    {% for category, message in messages %}
-      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
+{% extends "base.html" %} 
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Licenças Cadastradas</h2>
-    <table class="table table-hover">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Empresa</th>
-                <th>Ato</th>
-                <th>Portaria</th>
-                <th>Data de Publicação</th>
-                <th>Vencimento</th>
-                <th>Status</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for licenca in licencas %}
-            <tr>
-                <td>{{ licenca.id }}</td>
-                <td>
-                    <span class="expand-info" data-bs-toggle="collapse" data-bs-target="#collapse{{ licenca.id }}" aria-expanded="false" style="cursor: pointer;">
-                        {{ licenca.empresa }}
-                    </span>
-                </td>
-                <td>{{ licenca.ato }}</td>
-                <td>{{ licenca.portaria }}</td>
-                <td>{{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</td>
-                <td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
-                <td>{{ licenca.status }}</td>
-                <td>
-                    <a href="{{ url_for('edit_license', id=licenca.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                    <button class="btn btn-danger btn-sm delete-btn" data-id="{{ licenca.id }}">Excluir</button>
-                </td>
-            </tr>
-            <tr class="collapse" id="collapse{{ licenca.id }}">
-                <td colspan="8">
-                    <div class="card card-body">
-                        <strong>Empresa:</strong> {{ licenca.empresa }}<br>
-                        <strong>Ato:</strong> {{ licenca.ato }}<br>
-                        <strong>Portaria:</strong> {{ licenca.portaria }}<br>
-                        <strong>Data de Publicação:</strong> {{ licenca.data_publicacao.strftime('%d/%m/%Y') }}<br>
-                        <strong>Vencimento:</strong> {{ licenca.vencimento.strftime('%d/%m/%Y') }}<br>
-                        <strong>Condicionantes Ambientais:</strong> {{ licenca.condicionantes or 'Nenhuma' }}<br>
-                        <strong>Prazo de Cumprimento:</strong> {{ licenca.prazo_cumprimento or 'N/A' }}<br>
-                        <strong>Status:</strong> {{ licenca.status }}<br>
-                        <strong>Observações:</strong> {{ licenca.observacoes or 'Nenhuma' }}<br>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- Modal de Confirmação de Exclusão -->
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Tem certeza que deseja excluir esta licença?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="confirmDelete">Excluir</button>
-            </div>
+    <h2 class="mb-3">Licenças Cadastradas</h2>
+    
+    <!-- Explicação dos Filtros -->
+    <div class="d-flex align-items-center bg-light p-3 rounded shadow-sm mb-3">
+        <i class="bi bi-filter-circle text-primary me-2" style="font-size: 1.5rem;"></i>
+        <div>
+            <strong>Como usar os filtros?</strong><br>
+            Utilize a barra de busca para encontrar licenças por empresa. O filtro de status ajuda a identificar licenças ativas, vencidas ou vencendo.
         </div>
     </div>
+
+    <!-- Formulário de Busca -->
+    <form method="GET" action="{{ url_for('list_licenses') }}" class="bg-white p-3 rounded shadow-sm mb-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Empresa</label>
+                <input type="text" name="search" class="form-control" placeholder="Buscar por Empresa" value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">Todos os Status</option>
+                    <option value="Ativa" {% if request.args.get('status') == 'Ativa' %}selected{% endif %}>Ativa</option>
+                    <option value="Expirado" {% if request.args.get('status') == 'Expirado' %}selected{% endif %}>Expirado</option>
+                    <option value="Vence Hoje" {% if request.args.get('status') == 'Vence Hoje' %}selected{% endif %}>Vence Hoje</option>
+                    <option value="Em processo de renovação" {% if request.args.get('status') == 'Em processo de renovação' %}selected{% endif %}>Em processo de renovação</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-50">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+                <a href="{{ url_for('list_licenses') }}" class="btn btn-secondary w-50">
+                    <i class="bi bi-x-circle"></i> Limpar
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- Tabela de Licenças -->
+    <div class="table-responsive">
+        <table class="table table-hover table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Empresa</th>
+                    <th>Ato</th>
+                    <th>Portaria</th>
+                    <th>Data de Publicação</th>
+                    <th>Vencimento</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for licenca in licencas %}
+                <tr>
+                    <td>{{ licenca.id }}</td>
+                    <td>
+                        <span class="expand-info fw-bold" data-bs-toggle="collapse" data-bs-target="#collapse{{ licenca.id }}" style="cursor: pointer;">
+                            {{ licenca.empresa }}
+                        </span>
+                    </td>
+                    <td>{{ licenca.ato }}</td>
+                    <td>{{ licenca.portaria }}</td>
+                    <td>{{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <span class="badge {% if licenca.status == 'Ativa' %}bg-success{% elif licenca.status == 'Expirado' %}bg-danger{% elif licenca.status == 'Vence Hoje' %}bg-warning{% else %}bg-info{% endif %}">
+                            {{ licenca.status }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('edit_license', id=licenca.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="{{ url_for('delete_license', id=licenca.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta licença?');">
+                            <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr class="collapse" id="collapse{{ licenca.id }}">
+                    <td colspan="8">
+                        <div class="card card-body">
+                            <h5 class="text-primary">Detalhes da Licença</h5>
+                            <p><strong>Empresa:</strong> {{ licenca.empresa }}</p>
+                            <p><strong>Ato:</strong> {{ licenca.ato }}</p>
+                            <p><strong>Portaria:</strong> {{ licenca.portaria }}</p>
+                            <p><strong>Data de Publicação:</strong> {{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</p>
+                            <p><strong>Vencimento:</strong> {{ licenca.vencimento.strftime('%d/%m/%Y') }}</p>
+                            <p><strong>Condicionantes Ambientais:</strong> {{ licenca.condicionantes or 'Nenhuma' }}</p>
+                            <p><strong>Prazo de Cumprimento:</strong> {{ licenca.prazo_cumprimento or 'N/A' }}</p>
+                            <p><strong>Status:</strong> {{ licenca.status }}</p>
+                            <p><strong>Observações:</strong> {{ licenca.observacoes or 'Nenhuma' }}</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Contador de Licenças -->
+    <div class="mt-3 text-center">
+        <strong>Total de Licenças Listadas: {{ licencas|length }}</strong>
+    </div>
+
+    <!-- Paginação -->
+    <div class="d-flex justify-content-center mt-3">
+        {{ pagination.links }}
+    </div>
 </div>
-
-<!-- JavaScript --><script>
-    document.addEventListener("DOMContentLoaded", function () {
-        let selectedLicenseId = null;
-
-        document.querySelectorAll(".delete-btn").forEach(function (button) {
-            button.addEventListener("click", function (event) {
-                event.stopPropagation();
-                selectedLicenseId = this.getAttribute("data-id");
-
-                let deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
-                deleteModal.show();
-            });
-        });
-
-        document.getElementById("confirmDelete").addEventListener("click", function () {
-            if (selectedLicenseId) {
-                fetch(`/delete_license/${selectedLicenseId}`, {
-                    method: "POST"
-                }).then(response => {
-                    if (response.ok) {
-                        let deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
-                        deleteModal.hide(); // Fecha o modal
-
-                        setTimeout(() => {
-                            location.reload(); // Recarrega a página para mostrar a mensagem
-                        }, 500);
-                    } else {
-                        alert("Erro ao excluir a licença.");
-                    }
-                });
-            }
-        });
-    });
-</script>
 
 {% endblock %}

@@ -1,4 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from models import Licenca  # Supondo que Licenca seja o modelo das licenças
+from flask_login import login_required
+from flask import render_template
+from flask import Flask, render_template, request, redirect, url_for, flash, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -6,10 +9,17 @@ from flask_migrate import Migrate
 from datetime import datetime, timedelta
 from config import Config
 from models import db, User, Licenca
-from flask import jsonify
+from flask_paginate import Pagination, get_page_parameter
+from werkzeug.utils import secure_filename
+import os
+import pandas as pd
+
+ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
+
 # Inicializando a aplicação Flask
 app = Flask(__name__)
 app.config.from_object(Config)
+
 
 # Inicializando as extensões
 db.init_app(app)
@@ -24,6 +34,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 # -------------------- ROTAS DO SISTEMA --------------------
+
 
 @app.route('/')
 def index():
@@ -55,21 +66,39 @@ def logout():
 
 # -------------------- DASHBOARD --------------------
 
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    hoje = datetime.utcnow().date()
+
+    # Buscar todas as licenças
     licencas = Licenca.query.all()
-
     total_licencas = len(licencas)
-    vencendo_breve = Licenca.query.filter(Licenca.vencimento <= datetime.utcnow().date() + timedelta(days=30)).count()
-    expiradas = Licenca.query.filter(Licenca.vencimento < datetime.utcnow().date()).count()
 
-    # Calculando os dias restantes para cada licença
+    # Contar licenças vencendo nos próximos 30 dias
+    vencendo_breve = Licenca.query.filter(
+        Licenca.vencimento > hoje,  # Ainda não venceu
+        Licenca.vencimento <= hoje + timedelta(days=30)
+    ).count()
+
+    # Contar licenças expiradas (já passaram da data de vencimento)
+    expiradas = Licenca.query.filter(Licenca.vencimento < hoje).count()
+
+    # Lista de licenças próximas ao vencimento com status ajustado
     licencas_vencendo = []
-    for licenca in Licenca.query.filter(Licenca.vencimento <= datetime.utcnow().date() + timedelta(days=30)).all():
-        # Converter `licenca.vencimento` (date) para `datetime`
-        vencimento_datetime = datetime.combine(licenca.vencimento, datetime.min.time())
-        licenca.dias_restantes = (vencimento_datetime - datetime.utcnow()).days
+    for licenca in Licenca.query.filter(Licenca.vencimento <= hoje + timedelta(days=30)).all():
+        dias_restantes = (licenca.vencimento - hoje).days
+
+        # Definir status correto para cada licença
+        if dias_restantes > 0:
+            licenca.status = "Próxima ao Vencimento"
+        elif dias_restantes == 0:
+            licenca.status = "Vence Hoje"
+        else:
+            licenca.status = "Expirado"
+
+        licenca.dias_restantes = dias_restantes  # Armazena para exibição
         licencas_vencendo.append(licenca)
 
     return render_template(
@@ -79,6 +108,7 @@ def dashboard():
         vencendo_breve=vencendo_breve,
         expiradas=expiradas
     )
+
 # -------------------- CADASTRO DE LICENÇAS --------------------
 
 
@@ -226,8 +256,39 @@ def edit_license(id):
 @app.route('/licencas')
 @login_required
 def list_licenses():
-    licencas = Licenca.query.all()
-    return render_template('listar_licencas.html', licencas=licencas)
+    # Captura os parâmetros GET para filtros
+    search_query = request.args.get('search', '', type=str)
+    status_filter = request.args.get('status', '', type=str)
+
+    # Consulta base
+    query = Licenca.query
+
+    # Aplicando filtros de forma independente
+    if search_query:
+        query = query.filter(Licenca.empresa.ilike(f"%{search_query}%"))
+
+    if status_filter:
+        query = query.filter(Licenca.status == status_filter)
+
+    # Paginação
+    page = request.args.get(get_page_parameter(), type=int, default=1)
+    per_page = 20
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+
+    return render_template(
+        'listar_licencas.html',
+        licencas=pagination.items,
+        pagination=pagination,
+        search_query=search_query,
+        status_filter=status_filter
+    )
+# Rota para limpar os filtros
+
+
+@app.route('/licencas/limpar_filtros')
+@login_required
+def limpar_filtros():
+    return redirect(url_for('list_licenses'))
 
 # -------------------- LICENCAS VENCENDO --------------------
 
@@ -245,6 +306,7 @@ def expiring_licenses():
 
 # -------------------- EXCLUIR LICENCAS --------------------
 
+
 @app.route('/delete_license/<int:id>', methods=['POST'])
 @login_required
 def delete_license(id):
@@ -256,7 +318,8 @@ def delete_license(id):
     try:
         db.session.delete(licenca)
         db.session.commit()
-        flash("Licença excluída com sucesso!", "success")  # Mensagem de sucesso
+        flash("Licença excluída com sucesso!",
+              "success")  # Mensagem de sucesso
     except Exception as e:
         db.session.rollback()
         flash("Erro ao excluir a licença.", "danger")
@@ -289,7 +352,62 @@ def list_users():
     return render_template('list_users.html', users=users)
 
 
+# -------------------- UPLOAD DAS PLANILHAS --------------------
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+@app.route('/upload_licencas', methods=['POST'])
+def upload_licencas():
+    if 'file_upload' not in request.files:
+        flash('Nenhum arquivo enviado!', 'danger')
+        return redirect(request.referrer)
+
+    file = request.files['file_upload']
+
+    if file.filename == '':
+        flash('Nenhum arquivo selecionado!', 'danger')
+        return redirect(request.referrer)
+
+    if file and allowed_file(file.filename):
+        try:
+            # Lendo a planilha diretamente da requisição
+            df = pd.read_excel(file)
+
+            # Iterando sobre as linhas e cadastrando no banco de dados
+            for _, row in df.iterrows():
+                nova_licenca = Licenca(
+                    empresa=row.get('Empresa', ''),
+                    ato=row.get('Ato', ''),
+                    portaria=row.get('Portaria Nº', ''),
+                    data_publicacao=pd.to_datetime(
+                        row.get('Data de Publicação', ''), errors='coerce').date(),
+                    vencimento=pd.to_datetime(
+                        row.get('Vencimento', ''), errors='coerce').date(),
+                    condicionantes=row.get('Condicionantes Ambientais', ''),
+                    prazo_cumprimento=row.get('Prazo de Cumprimento', ''),
+                    status=row.get('Status', ''),
+                    observacoes=row.get('Observações', '')
+                )
+
+                # Adiciona a licença ao banco apenas se os dados essenciais estiverem preenchidos
+                if nova_licenca.empresa and nova_licenca.ato and nova_licenca.portaria:
+                    db.session.add(nova_licenca)
+
+            # Commitando as mudanças no banco de dados
+            db.session.commit()
+            flash('Licenças importadas com sucesso!', 'success')
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao processar a planilha: {str(e)}', 'danger')
+
+        return redirect(url_for('list_licenses'))
+
+    flash('Formato de arquivo inválido. Envie um arquivo .xls ou .xlsx.', 'danger')
+    return redirect(request.referrer)
 # -------------------- EXECUÇÃO DO SERVIDOR --------------------
+
 
 if __name__ == '__main__':
     app.run(debug=True)

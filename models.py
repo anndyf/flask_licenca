@@ -9,6 +9,7 @@ db = SQLAlchemy()
 
 # -------------------- MODELO DE USUÁRIO --------------------
 
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
@@ -26,9 +27,11 @@ class User(db.Model, UserMixin):
 
     def update_password(self, new_password):
         """Atualiza a senha do usuário"""
-        self.password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+        self.password = bcrypt.generate_password_hash(
+            new_password).decode('utf-8')
 
 # -------------------- MODELO DE LICENÇAS --------------------
+
 
 class Licenca(db.Model):
     id = db.Column(db.Integer, primary_key=True)

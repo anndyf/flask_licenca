@@ -2,50 +2,93 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Cadastrar Nova Licença</h2>
-    <form method="POST">
-        <div class="mb-3">
-            <label for="empresa" class="form-label">Empresa</label>
-            <input type="text" class="form-control" id="empresa" name="empresa" required>
+    <h2 class="mb-3">Cadastrar Nova Licença</h2>
+    <div class="card p-4">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <form method="POST" enctype="multipart/form-data" action="{{ url_for('upload_licencas') }}">
+                    <label for="file_upload" class="form-label">Carregar Dados em Massa</label>
+                    <input type="file" class="form-control mb-2" id="file_upload" name="file_upload" accept=".xlsx, .xls">
+                    <button type="submit" class="btn btn-primary">Carregar Planilha</button>
+                </form>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="ato" class="form-label">Ato</label>
-            <input type="text" class="form-control" id="ato" name="ato" required>
-        </div>
-        <div class="mb-3">
-            <label for="portaria" class="form-label">Portaria Nº</label>
-            <input type="text" class="form-control" id="portaria" name="portaria" required>
-        </div>
-        <div class="mb-3">
-            <label for="data_publicacao" class="form-label">Data de Publicação</label>
-            <input type="date" class="form-control" id="data_publicacao" name="data_publicacao" required>
-        </div>
-        <div class="mb-3">
-            <label for="vencimento" class="form-label">Vencimento</label>
-            <input type="date" class="form-control" id="vencimento" name="vencimento" required>
-        </div>
-        <div class="mb-3">
-            <label for="condicionantes" class="form-label">Condicionantes Ambientais</label>
-            <textarea class="form-control" id="condicionantes" name="condicionantes"></textarea>
-        </div>
-        <div class="mb-3">
-            <label for="prazo_cumprimento" class="form-label">Prazo de Cumprimento</label>
-            <input type="text" class="form-control" id="prazo_cumprimento" name="prazo_cumprimento">
-        </div>
-        <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
-            <select class="form-control" id="status" name="status">
-                <option value="Ativa">Ativa</option>
-                <option value="Vencida">Vencida</option>
-                <option value="Em processo de renovação">Em processo de renovação</option>
-            </select>
-        </div>
-        <div class="mb-3">
-            <label for="observacoes" class="form-label">Observações</label>
-            <textarea class="form-control" id="observacoes" name="observacoes"></textarea>
-        </div>
-        <button type="submit" class="btn btn-success">Cadastrar</button>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
-    </form>
+        <hr>
+        <form method="POST">
+            <div class="mb-3">
+                <label for="empresa" class="form-label">Empresa</label>
+                <input type="text" class="form-control" id="empresa" name="empresa" required>
+            </div>
+            <div class="mb-3">
+                <label for="ato" class="form-label">Ato</label>
+                <input type="text" class="form-control" id="ato" name="ato" required>
+            </div>
+            <div class="mb-3">
+                <label for="portaria" class="form-label">Portaria Nº</label>
+                <input type="text" class="form-control" id="portaria" name="portaria" required>
+            </div>
+            <div class="mb-3">
+                <label for="data_publicacao" class="form-label">Data de Publicação</label>
+                <input type="date" class="form-control" id="data_publicacao" name="data_publicacao" required>
+            </div>
+            <div class="mb-3">
+                <label for="vencimento" class="form-label">Vencimento</label>
+                <input type="date" class="form-control" id="vencimento" name="vencimento" required>
+            </div>
+        
+            <!-- Adicionar múltiplas condicionantes -->
+            <div id="condicionantes">
+                <div class="mb-3">
+                    <label for="condicionantes" class="form-label">Condicionantes Ambientais</label>
+                    <input type="text" class="form-control" name="condicionante_descricao[]" required>
+                    <label for="prazo" class="form-label">Prazo de Cumprimento</label>
+                    <input type="date" class="form-control" name="prazo_cumprimento[]">
+                </div>
+            </div>
+            <button type="button" onclick="adicionarCondicionante()" class="btn btn-secondary">Adicionar Condicionante</button>
+        
+            <button type="submit" class="btn btn-success mt-3">Cadastrar</button>
+        </form>
+        
+        <script>
+        function adicionarCondicionante() {
+            let div = document.createElement("div");
+            div.innerHTML = `
+                <div class="mb-3">
+                    <label for="condicionantes" class="form-label">Condicionantes Ambientais</label>
+                    <input type="text" class="form-control" name="condicionante_descricao[]" required>
+                    <label for="prazo" class="form-label">Prazo de Cumprimento</label>
+                    <input type="date" class="form-control" name="prazo_cumprimento[]">
+                </div>
+            `;
+            document.getElementById("condicionantes").appendChild(div);
+        }
+        </script>
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="Ativa">Ativa</option>
+                        <option value="Vencida">Vencida</option>
+                        <option value="Em processo de renovação">Em processo de renovação</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="condicionantes" class="form-label">Condicionantes Ambientais</label>
+                    <textarea class="form-control" id="condicionantes" name="condicionantes"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label for="observacoes" class="form-label">Observações</label>
+                    <textarea class="form-control" id="observacoes" name="observacoes"></textarea>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+                <button type="submit" class="btn btn-success">Salvar</button>
+                <button type="reset" class="btn btn-danger">Excluir</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Voltar</a>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}
