@@ -48,6 +48,7 @@
                                 <tr><td><strong>Portaria:</strong></td><td>{{ licenca.portaria }}</td></tr>
                                 <tr><td><strong>Data de Publicação:</strong></td><td>{{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</td></tr>
                                 <tr><td><strong>Vencimento:</strong></td><td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td></tr>
+                                <tr><td><strong>Observações:</strong></td><td>{{ licenca.observacoes }}</td></tr>
                             </tbody>
                         </table>
                         <h6 class="text-secondary">Condicionantes Ambientais</h6>
@@ -81,7 +82,6 @@
                         {% else %}
                             <p>Nenhuma condicionante cadastrada.</p>
                         {% endif %}
-                        <button class="btn btn-primary btn-sm mt-3" onclick="printDetails('collapse{{ licenca.id }}')">Imprimir Detalhes</button>
                     </div>
                 </div>
             </div>
@@ -97,16 +97,4 @@
         {{ pagination.links }}
     </div>
 </div>
-
-<script>
-    function printDetails(id) {
-        var content = document.getElementById(id).innerHTML;
-        var printWindow = window.open('', '', 'height=600,width=800');
-        printWindow.document.write('<html><head><title>Imprimir Detalhes</title></head><body>');
-        printWindow.document.write('<table border="1" width="100%">' + content + '</table>');
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.print();
-    }
-</script>
 {% endblock %}
