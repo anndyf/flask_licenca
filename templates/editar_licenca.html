@@ -4,7 +4,7 @@
 <div class="container mt-4">
     <h2 class="mb-3 text-left text-dark">Editar Licença</h2>
     
-    <form method="POST" action="{{ url_for('list_licenses') }}" class="card p-4 shadow-sm">
+    <form method="POST" action="{{ url_for('editar_licenca', id=licenca.id) }}" class="card p-4 shadow-sm">
         <div class="mb-3">
             <label for="empresa" class="form-label">Empresa</label>
             <input type="text" class="form-control" id="empresa" name="empresa" value="{{ licenca.empresa }}" required>
@@ -80,7 +80,10 @@ function adicionarCondicionante() {
 }
 
 function removerCondicionante(id) {
-    document.getElementById(`condicionante_${id}`).remove();
+    let element = document.getElementById(`condicionante_${id}`);
+    if (element) {
+        element.remove();
+    }
 }
 </script>
 {% endblock %}
