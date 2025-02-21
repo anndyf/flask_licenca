@@ -1,100 +1,101 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Dashboard</h2>
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-12 text-center">
+            <img src="/static/logo.png" alt="Lima - Consultoria Ambiental" class="img-fluid mb-3" style="max-height: 200px;">
+            <h2 class="fw-bold mb-4 text-success">Sistema de Monitoramento de Licencas Ambientais</h2>
+        </div>
+    </div>
 
     <div class="row">
-        <!-- Total de Licenças (Clicável) -->
-        <div class="col-md-4">
-            <a href="{{ url_for('list_licenses') }}" class="card-link">
-                <div class="card text-white bg-primary mb-3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Total Cadastradas</h5>
-                        <h3>{{ total_licencas }}</h3>
-                    </div>
+        <div class="col-lg-4">
+            <a href="{{ url_for('list_licenses') }}" class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-lg p-4 text-center" style="background: #e8f5e9;">
+                    <h5 class="text-muted">Total Cadastradas</h5>
+                    <h2 class="fw-bold text-success">{{ total_licencas }}</h2>
                 </div>
             </a>
         </div>
-
-        <!-- Licenças Expiradas (Agora redireciona para Licenças Vencendo) -->
-        <div class="col-md-4">
-            <a href="{{ url_for('expiring_licenses') }}" class="card-link">
-                <div class="card text-white bg-danger mb-3">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Expiradas</h5>
-                        <h3>{{ expiradas }}</h3>
-                    </div>
+        <div class="col-lg-4">
+            <a href="{{ url_for('expiring_licenses') }}" class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-lg p-4 text-center" style="background: #ffebee;">
+                    <h5 class="text-muted">Expiradas</h5>
+                    <h2 class="fw-bold text-danger">{{ expiradas }}</h2>
                 </div>
             </a>
         </div>
-
-        <!-- Licenças Vencendo em Breve (Clicável) -->
-        <div class="col-md-4">
-            <a href="{{ url_for('expiring_licenses') }}" class="card-link">
-                <div class="card text-white bg-warning mb-3">
-                    <div class="card-body text-center">
-                        <h4 class="card-title">Vencendo em Breve</h4>
-                        <h2>{{ vencendo_breve }}</h2>
-                        <p>Licenças próximas do vencimento nos próximos 30 dias.</p>
-                    </div>
+        <div class="col-lg-4">
+            <a href="{{ url_for('expiring_licenses') }}" class="text-decoration-none">
+                <div class="card shadow-sm border-0 rounded-lg p-4 text-center" style="background: #fffde7;">
+                    <h5 class="text-muted">Vencendo em Breve</h5>
+                    <h2 class="fw-bold text-warning">{{ vencendo_breve }}</h2>
+                    <p class="text-muted">Nos próximos 30 dias</p>
                 </div>
             </a>
         </div>
     </div>
 
-    <!-- Lista de Licenças Próximas do Vencimento -->
-    <div class="mt-4">
-        <h3>Licenças Próximas do Vencimento</h3>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Empresa</th>
-                    <th>Ato</th>
-                    <th>Vencimento</th>
-                    <th>Dias Restantes</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for licenca in licencas_vencendo %}
-                <tr>
-                    <td>{{ licenca.empresa }}</td>
-                    <td>{{ licenca.ato }}</td>
-                    <td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
-                    <td>
-                        {% if licenca.dias_restantes > 0 %}
-                            {{ licenca.dias_restantes }} dias
-                        {% elif licenca.dias_restantes == 0 %}
-                            <span class="text-warning"><strong>Vence Hoje!</strong></span>
-                        {% else %}
-                            <span class="text-danger">Expirado</span>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if licenca.dias_restantes > 0 %}
-                            <span class="badge bg-warning">Próxima ao Vencimento</span>
-                        {% elif licenca.dias_restantes == 0 %}
-                            <span class="badge bg-danger">Vence Hoje!</span>
-                        {% else %}
-                            <span class="badge bg-dark">Expirado</span>
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="row mt-5">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0 rounded-lg p-4">
+                <h5 class="fw-bold mb-3 text-success">Licenças Próximas do Vencimento</h5>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Empresa</th>
+                                <th>Ato</th>
+                                <th>Vencimento</th>
+                                <th>Dias Restantes</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for licenca in licencas_vencendo %}
+                            <tr>
+                                <td>{{ licenca.empresa }}</td>
+                                <td>{{ licenca.ato }}</td>
+                                <td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
+                                <td class="fw-bold">
+                                    {% if licenca.dias_restantes > 0 %}
+                                        {{ licenca.dias_restantes }} dias
+                                    {% elif licenca.dias_restantes == 0 %}
+                                        <span class="text-warning"><strong>Vence Hoje!</strong></span>
+                                    {% else %}
+                                        <span class="text-danger">Expirado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if licenca.dias_restantes > 0 %}
+                                        <span class="badge bg-warning">Próxima ao Vencimento</span>
+                                    {% elif licenca.dias_restantes == 0 %}
+                                        <span class="badge bg-danger">Vence Hoje!</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Expirado</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-
 </div>
 
 <style>
-    .card-link {
-        text-decoration: none;
+    .card {
+        transition: all 0.3s ease-in-out;
     }
-    .card-link:hover {
-        text-decoration: none;
-        opacity: 0.9;
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
     }
 </style>
 
