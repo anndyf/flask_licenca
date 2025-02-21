@@ -2,26 +2,39 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Lista de Usuários</h2>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nome de Usuário</th>
-                <th>Email</th>
-                <th>Administrador</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user.id }}</td>
-                <td>{{ user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{% if user.is_admin %} Sim {% else %} Não {% endif %}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <h2 class="mb-3 text-left text-dark">Lista de Usuários</h2>
+    
+    <div class="card p-4 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome de Usuário</th>
+                        <th>Email</th>
+                        <th>Administrador</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td class="fw-bold">{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="badge {% if user.is_admin %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if user.is_admin %} Sim {% else %} Não {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('editar_usuario', id=user.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 {% endblock %}

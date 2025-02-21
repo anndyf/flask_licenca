@@ -6,3 +6,6 @@ Flask-Migrate==4.0.4
 psycopg2-binary==2.9.9
 python-dotenv==1.0.0
 Werkzeug==2.3.7
+Flask-Paginate==2023.8.25
+pandas==2.0.3
+openpyxl==3.1.2

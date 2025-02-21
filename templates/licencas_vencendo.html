@@ -2,32 +2,35 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Licenças Próximas do Vencimento</h2>
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Empresa</th>
-                <th>Ato</th>
-                <th>Portaria</th>
-                <th>Data de Publicação</th>
-                <th>Vencimento</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
+    <h2 class="mb-3 text-left text-dark">Licenças Próximas do Vencimento</h2>
+    
+    <div class="card p-4 shadow-sm">
+        <div class="list-group">
             {% for licenca in licencas %}
-            <tr>
-                <td>{{ licenca.id }}</td>
-                <td>{{ licenca.empresa }}</td>
-                <td>{{ licenca.ato }}</td>
-                <td>{{ licenca.portaria }}</td>
-                <td>{{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</td>
-                <td class="text-danger">{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
-                <td>{{ licenca.status }}</td>
-            </tr>
+            {% set dias_para_vencer = (licenca.vencimento - hoje).days %}
+            {% set cor_destaque = "text-success" if dias_para_vencer > 30 else "text-warning" if dias_para_vencer <= 30 and dias_para_vencer > 5 else "text-danger" %}
+            <div class="list-group-item border rounded shadow-sm mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ licenca.empresa }}</h5>
+                        <p class="text-muted mb-0">{{ licenca.ato }}</p>
+                    </div>
+                    <div class="text-end">
+                        <p class="mb-0 fw-bold text-danger">{{ licenca.vencimento.strftime('%d/%m/%Y') }}</p>
+                        <small class="fw-bold {{ cor_destaque }}">Vencimento - 
+                            {% if dias_para_vencer > 0 %}
+                                Faltam {{ dias_para_vencer }} dias
+                            {% elif dias_para_vencer == 0 %}
+                                Vence hoje
+                            {% else %}
+                                Vencido há {{ dias_para_vencer | abs }} dias
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
             {% endfor %}
-        </tbody>
-    </table>
+        </div>
+    </div>
 </div>
 {% endblock %}

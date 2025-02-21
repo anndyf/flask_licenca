@@ -1,6 +1,6 @@
-from models import Licenca  # Supondo que Licenca seja o modelo das licenças
+# Supondo que Licenca seja o modelo das licenças
+from models import Licenca, Condicionante
 from flask_login import login_required
-from flask import render_template
 from flask import Flask, render_template, request, redirect, url_for, flash, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -13,6 +13,8 @@ from flask_paginate import Pagination, get_page_parameter
 from werkzeug.utils import secure_filename
 import os
 import pandas as pd
+from pathlib import Path
+
 
 ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
 
@@ -116,33 +118,50 @@ def dashboard():
 @login_required
 def cadastrar_licenca():
     if request.method == 'POST':
-        empresa = request.form['empresa']
-        ato = request.form['ato']
-        portaria = request.form['portaria']
-        data_publicacao = datetime.strptime(
-            request.form['data_publicacao'], "%Y-%m-%d")
-        vencimento = datetime.strptime(request.form['vencimento'], "%Y-%m-%d")
-        condicionantes = request.form.get('condicionantes', '')
-        prazo_cumprimento = request.form.get('prazo_cumprimento', '')
-        status = request.form.get('status', 'Ativa')
-        observacoes = request.form.get('observacoes', '')
+        try:
+            # Criar a licença
+            nova_licenca = Licenca(
+                empresa=request.form['empresa'],
+                ato=request.form['ato'],
+                portaria=request.form['portaria'],
+                data_publicacao=datetime.strptime(
+                    request.form['data_publicacao'], "%Y-%m-%d"),
+                vencimento=datetime.strptime(
+                    request.form['vencimento'], "%Y-%m-%d"),
+                observacoes=request.form.get('observacoes', '')
+            )
+            db.session.add(nova_licenca)
+            db.session.commit()
 
-        nova_licenca = Licenca(
-            empresa=empresa,
-            ato=ato,
-            portaria=portaria,
-            data_publicacao=data_publicacao,
-            vencimento=vencimento,
-            condicionantes=condicionantes,
-            prazo_cumprimento=prazo_cumprimento,
-            status=status,
-            observacoes=observacoes
-        )
+            # Recuperar dados das condicionantes
+            descricoes = request.form.getlist('condicionante_descricao[]')
+            prazos = request.form.getlist('prazo_cumprimento[]')
+            metas = request.form.getlist('meta_execucao[]')
+            situacoes = request.form.getlist('situacao[]')
 
-        db.session.add(nova_licenca)
-        db.session.commit()
-        flash('Licença cadastrada com sucesso!', 'success')
-        return redirect(url_for('dashboard'))
+            print("Descrições recebidas:", descricoes)  # Debug
+
+            for i in range(len(descricoes)):
+                if descricoes[i]:  # Evita salvar condicionantes vazias
+                    nova_condicionante = Condicionante(
+                        licenca_id=nova_licenca.id,
+                        descricao=descricoes[i],
+                        prazo_cumprimento=prazos[i] if i < len(
+                            prazos) else None,
+                        meta_execucao=datetime.strptime(
+                            metas[i], "%Y-%m-%d") if metas[i] else None,
+                        situacao=situacoes[i] if i < len(situacoes) else None
+                    )
+                    db.session.add(nova_condicionante)
+
+            db.session.commit()
+            flash('Licença cadastrada com sucesso!', 'success')
+            return redirect(url_for('dashboard'))
+
+        except Exception as e:
+            print("Erro ao cadastrar licença:", e)  # Debug
+            db.session.rollback()
+            flash('Erro ao cadastrar licença.', 'danger')
 
     return render_template('cadastrar_licenca.html')
 
@@ -228,7 +247,7 @@ def admin_trocar_senha(user_id):
 
 @app.route('/editar_licenca/<int:id>', methods=['GET', 'POST'])
 @login_required
-def edit_license(id):
+def editar_licenca(id):
     licenca = Licenca.query.get_or_404(id)
 
     if request.method == 'POST':
@@ -236,24 +255,43 @@ def edit_license(id):
         licenca.ato = request.form['ato']
         licenca.portaria = request.form['portaria']
         licenca.data_publicacao = datetime.strptime(
-            request.form['data_publicacao'], '%Y-%m-%d')
+            request.form['data_publicacao'], "%Y-%m-%d")
         licenca.vencimento = datetime.strptime(
-            request.form['vencimento'], '%Y-%m-%d')
-        licenca.condicionantes = request.form['condicionantes']
-        licenca.prazo_cumprimento = request.form['prazo_cumprimento']
-        licenca.status = request.form['status']
-        licenca.observacoes = request.form['observacoes']
+            request.form['vencimento'], "%Y-%m-%d")
+        licenca.observacoes = request.form.get('observacoes', '')
+
+        # Removendo condicionantes antigas e inserindo novas
+        Condicionante.query.filter_by(licenca_id=id).delete()
+        db.session.commit()
+
+        descricoes = request.form.getlist('condicionante_descricao[]')
+        prazos = request.form.getlist('prazo_cumprimento[]')
+        metas = request.form.getlist('meta_execucao[]')
+        situacoes = request.form.getlist('situacao[]')
+
+        for i in range(len(descricoes)):
+            if descricoes[i]:
+                nova_condicionante = Condicionante(
+                    licenca_id=id,
+                    descricao=descricoes[i],
+                    prazo_cumprimento=prazos[i] if i < len(prazos) else None,
+                    meta_execucao=datetime.strptime(
+                        metas[i], "%Y-%m-%d") if metas[i] else None,
+                    situacao=situacoes[i] if i < len(situacoes) else None
+                )
+                db.session.add(nova_condicionante)
 
         db.session.commit()
         flash('Licença atualizada com sucesso!', 'success')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('list_licenses'))
 
-    return render_template('editar_licenca.html', licenca=licenca)
+    return render_template('editar_licenca.html', licenca=licenca, enumerate=enumerate)
+
 
 # -------------------- LISTAR LICENCAS --------------------
 
 
-@app.route('/licencas')
+@app.route('/licencas', methods=['GET', 'POST'])
 @login_required
 def list_licenses():
     # Captura os parâmetros GET para filtros
@@ -280,15 +318,9 @@ def list_licenses():
         licencas=pagination.items,
         pagination=pagination,
         search_query=search_query,
-        status_filter=status_filter
+        status_filter=status_filter,
+        enumerate=enumerate  # Adiciona enumerate para uso no template
     )
-# Rota para limpar os filtros
-
-
-@app.route('/licencas/limpar_filtros')
-@login_required
-def limpar_filtros():
-    return redirect(url_for('list_licenses'))
 
 # -------------------- LICENCAS VENCENDO --------------------
 
@@ -297,12 +329,12 @@ def limpar_filtros():
 @login_required
 def expiring_licenses():
     hoje = datetime.utcnow().date()
-    # Licenças que vencem nos próximos 30 dias
     prazo_alerta = hoje + timedelta(days=30)
+
     licencas_vencendo = Licenca.query.filter(
         Licenca.vencimento <= prazo_alerta, Licenca.vencimento >= hoje).all()
 
-    return render_template('licencas_vencendo.html', licencas=licencas_vencendo)
+    return render_template('licencas_vencendo.html', licencas=licencas_vencendo, hoje=hoje)
 
 # -------------------- EXCLUIR LICENCAS --------------------
 
@@ -351,10 +383,33 @@ def list_users():
     users = User.query.all()
     return render_template('list_users.html', users=users)
 
+# -------------------- EDITAR USUARIOS --------------------
+@app.route('/admin/edit_user/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_usuario(id):
+    if not current_user.is_admin:
+        flash("Acesso negado! Apenas administradores podem editar usuários.", "danger")
+        return redirect(url_for('dashboard'))
+
+    user = User.query.get_or_404(id)
+
+    if request.method == 'POST':
+        user.username = request.form['username']
+        user.email = request.form['email']
+
+        if request.form['password']:
+            user.set_password(request.form['password'])  # Certifique-se que `set_password` faz hash da senha
+
+        db.session.commit()
+        flash("Usuário atualizado com sucesso!", "success")
+        return redirect(url_for('list_users'))
+
+    return render_template('edit_user.html', user=user)
+
 
 # -------------------- UPLOAD DAS PLANILHAS --------------------
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return Path(filename).suffix.lower() in {'.xls', '.xlsx'}
 
 
 @app.route('/upload_licencas', methods=['POST'])

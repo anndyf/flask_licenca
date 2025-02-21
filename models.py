@@ -40,11 +40,16 @@ class Licenca(db.Model):
     portaria = db.Column(db.String(50), nullable=False)
     data_publicacao = db.Column(db.Date, nullable=False)
     vencimento = db.Column(db.Date, nullable=False)
-    condicionantes = db.Column(db.Text, nullable=True)
-    prazo_cumprimento = db.Column(db.String(100), nullable=True)
-    status = db.Column(db.String(50), nullable=True)
     observacoes = db.Column(db.Text, nullable=True)
 
-    def esta_proxima_do_vencimento(self):
-        """Retorna True se a licença estiver a menos de 30 dias do vencimento"""
-        return self.vencimento <= datetime.utcnow().date() + timedelta(days=30)
+    # Relacionamento com as Condicionantes
+    condicionantes = db.relationship('Condicionante', backref='licenca', lazy=True)
+
+
+class Condicionante(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    licenca_id = db.Column(db.Integer, db.ForeignKey('licenca.id'), nullable=False)
+    descricao = db.Column(db.Text, nullable=False)
+    prazo_cumprimento = db.Column(db.String(100), nullable=True)
+    meta_execucao = db.Column(db.Date, nullable=True)
+    situacao = db.Column(db.String(50), nullable=True)  # Ex: Iniciado, Em andamento, Concluído

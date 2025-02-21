@@ -2,115 +2,111 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-3">Licenças Cadastradas</h2>
+    <h2 class="mb-3 text-left text-dark">Licenças Cadastradas</h2>
     
-    <!-- Explicação dos Filtros -->
-    <div class="d-flex align-items-center bg-light p-3 rounded shadow-sm mb-3">
-        <i class="bi bi-filter-circle text-primary me-2" style="font-size: 1.5rem;"></i>
-        <div>
-            <strong>Como usar os filtros?</strong><br>
-            Utilize a barra de busca para encontrar licenças por empresa. O filtro de status ajuda a identificar licenças ativas, vencidas ou vencendo.
+    <p class="text-muted">Clique no nome da empresa na lista abaixo para visualizar os detalhes da licença.</p>
+    <form method="GET" action="{{ url_for('list_licenses') }}" class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Empresa</label>
+            <input type="text" name="search" class="form-control" placeholder="Buscar por Empresa" value="{{ request.args.get('search', '') }}">
         </div>
-    </div>
-
-    <!-- Formulário de Busca -->
-    <form method="GET" action="{{ url_for('list_licenses') }}" class="bg-white p-3 rounded shadow-sm mb-3">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Empresa</label>
-                <input type="text" name="search" class="form-control" placeholder="Buscar por Empresa" value="{{ request.args.get('search', '') }}">
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Status</label>
-                <select name="status" class="form-select">
-                    <option value="">Todos os Status</option>
-                    <option value="Ativa" {% if request.args.get('status') == 'Ativa' %}selected{% endif %}>Ativa</option>
-                    <option value="Expirado" {% if request.args.get('status') == 'Expirado' %}selected{% endif %}>Expirado</option>
-                    <option value="Vence Hoje" {% if request.args.get('status') == 'Vence Hoje' %}selected{% endif %}>Vence Hoje</option>
-                    <option value="Em processo de renovação" {% if request.args.get('status') == 'Em processo de renovação' %}selected{% endif %}>Em processo de renovação</option>
-                </select>
-            </div>
-            <div class="col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-50">
-                    <i class="bi bi-search"></i> Buscar
-                </button>
-                <a href="{{ url_for('list_licenses') }}" class="btn btn-secondary w-50">
-                    <i class="bi bi-x-circle"></i> Limpar
-                </a>
-            </div>
+        <div class="col-md-3 d-flex gap-2 align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100">Buscar</button>
+            <a href="{{ url_for('list_licenses') }}" class="btn btn-secondary btn-sm w-100">Limpar</a>
         </div>
     </form>
-
-    <!-- Tabela de Licenças -->
-    <div class="table-responsive">
-        <table class="table table-hover table-striped">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Empresa</th>
-                    <th>Ato</th>
-                    <th>Portaria</th>
-                    <th>Data de Publicação</th>
-                    <th>Vencimento</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for licenca in licencas %}
-                <tr>
-                    <td>{{ licenca.id }}</td>
-                    <td>
-                        <span class="expand-info fw-bold" data-bs-toggle="collapse" data-bs-target="#collapse{{ licenca.id }}" style="cursor: pointer;">
-                            {{ licenca.empresa }}
-                        </span>
-                    </td>
-                    <td>{{ licenca.ato }}</td>
-                    <td>{{ licenca.portaria }}</td>
-                    <td>{{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</td>
-                    <td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td>
-                    <td>
-                        <span class="badge {% if licenca.status == 'Ativa' %}bg-success{% elif licenca.status == 'Expirado' %}bg-danger{% elif licenca.status == 'Vence Hoje' %}bg-warning{% else %}bg-info{% endif %}">
-                            {{ licenca.status }}
-                        </span>
-                    </td>
-                    <td>
-                        <a href="{{ url_for('edit_license', id=licenca.id) }}" class="btn btn-warning btn-sm">Editar</a>
-                        <form action="{{ url_for('delete_license', id=licenca.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta licença?');">
+    
+    <div class="card mt-3 p-3">
+        <div class="list-group">
+            {% for licenca in licencas %}
+            <div class="list-group-item border rounded shadow-sm mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-1">{{ licenca.empresa }}</h5>
+                        <p class="text-muted mb-0">{{ licenca.ato }}</p>
+                    </div>
+                    <div class="text-end">
+                        <p class="mb-0 fw-bold">{{ licenca.vencimento.strftime('%d/%m/%Y') }}</p>
+                        <small class="text-muted">Vencimento</small>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#collapse{{ licenca.id }}">Detalhes</button>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('editar_licenca', id=licenca.id) }}" class="btn btn-warning btn-sm">Editar</a>
+                        <form action="{{ url_for('delete_license', id=licenca.id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir esta licença?');">
                             <button type="submit" class="btn btn-danger btn-sm">Excluir</button>
                         </form>
-                    </td>
-                </tr>
-                <tr class="collapse" id="collapse{{ licenca.id }}">
-                    <td colspan="8">
-                        <div class="card card-body">
-                            <h5 class="text-primary">Detalhes da Licença</h5>
-                            <p><strong>Empresa:</strong> {{ licenca.empresa }}</p>
-                            <p><strong>Ato:</strong> {{ licenca.ato }}</p>
-                            <p><strong>Portaria:</strong> {{ licenca.portaria }}</p>
-                            <p><strong>Data de Publicação:</strong> {{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</p>
-                            <p><strong>Vencimento:</strong> {{ licenca.vencimento.strftime('%d/%m/%Y') }}</p>
-                            <p><strong>Condicionantes Ambientais:</strong> {{ licenca.condicionantes or 'Nenhuma' }}</p>
-                            <p><strong>Prazo de Cumprimento:</strong> {{ licenca.prazo_cumprimento or 'N/A' }}</p>
-                            <p><strong>Status:</strong> {{ licenca.status }}</p>
-                            <p><strong>Observações:</strong> {{ licenca.observacoes or 'Nenhuma' }}</p>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </div>
+                </div>
+                <div class="collapse mt-3" id="collapse{{ licenca.id }}">
+                    <div class="card p-3">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr><td><strong>Empresa:</strong></td><td>{{ licenca.empresa }}</td></tr>
+                                <tr><td><strong>Ato:</strong></td><td>{{ licenca.ato }}</td></tr>
+                                <tr><td><strong>Portaria:</strong></td><td>{{ licenca.portaria }}</td></tr>
+                                <tr><td><strong>Data de Publicação:</strong></td><td>{{ licenca.data_publicacao.strftime('%d/%m/%Y') }}</td></tr>
+                                <tr><td><strong>Vencimento:</strong></td><td>{{ licenca.vencimento.strftime('%d/%m/%Y') }}</td></tr>
+                            </tbody>
+                        </table>
+                        <h6 class="text-secondary">Condicionantes Ambientais</h6>
+                        {% if licenca.condicionantes %}
+                            <table class="table table-striped table-bordered align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Descrição</th>
+                                        <th>Prazo</th>
+                                        <th>Meta de Execução</th>
+                                        <th>Situação</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for index, condicionante in enumerate(licenca.condicionantes, start=1) %}
+                                    <tr>
+                                        <td><strong>{{ index }}</strong></td>
+                                        <td>{{ condicionante.descricao }}</td>
+                                        <td>{{ condicionante.prazo_cumprimento or 'N/A' }}</td>
+                                        <td>{{ condicionante.meta_execucao.strftime('%d/%m/%Y') if condicionante.meta_execucao else 'N/A' }}</td>
+                                        <td>
+                                            <span class="badge {% if condicionante.situacao == 'Iniciado' %}bg-warning{% elif condicionante.situacao == 'Em andamento' %}bg-info{% elif condicionante.situacao == 'Concluído' %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ condicionante.situacao }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p>Nenhuma condicionante cadastrada.</p>
+                        {% endif %}
+                        <button class="btn btn-primary btn-sm mt-3" onclick="printDetails('collapse{{ licenca.id }}')">Imprimir Detalhes</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 
-    <!-- Contador de Licenças -->
     <div class="mt-3 text-center">
         <strong>Total de Licenças Listadas: {{ licencas|length }}</strong>
     </div>
 
-    <!-- Paginação -->
     <div class="d-flex justify-content-center mt-3">
         {{ pagination.links }}
     </div>
 </div>
 
+<script>
+    function printDetails(id) {
+        var content = document.getElementById(id).innerHTML;
+        var printWindow = window.open('', '', 'height=600,width=800');
+        printWindow.document.write('<html><head><title>Imprimir Detalhes</title></head><body>');
+        printWindow.document.write('<table border="1" width="100%">' + content + '</table>');
+        printWindow.document.write('</body></html>');
+        printWindow.document.close();
+        printWindow.print();
+    }
+</script>
 {% endblock %}

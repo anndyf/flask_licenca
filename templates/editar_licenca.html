@@ -2,8 +2,9 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Editar Licença</h2>
-    <form method="POST">
+    <h2 class="mb-3 text-left text-dark">Editar Licença</h2>
+    
+    <form method="POST" action="{{ url_for('list_licenses') }}" class="card p-4 shadow-sm">
         <div class="mb-3">
             <label for="empresa" class="form-label">Empresa</label>
             <input type="text" class="form-control" id="empresa" name="empresa" value="{{ licenca.empresa }}" required>
@@ -24,24 +25,62 @@
             <label for="vencimento" class="form-label">Vencimento</label>
             <input type="date" class="form-control" id="vencimento" name="vencimento" value="{{ licenca.vencimento.strftime('%Y-%m-%d') }}" required>
         </div>
-        <div class="mb-3">
-            <label for="condicionantes" class="form-label">Condicionantes Ambientais</label>
-            <textarea class="form-control" id="condicionantes" name="condicionantes">{{ licenca.condicionantes }}</textarea>
+        
+        <h5 class="text-secondary">Condicionantes</h5>
+        <div id="condicionantes">
+            {% for index, condicionante in enumerate(licenca.condicionantes, start=1) %}
+            <div class="border p-3 rounded mb-2" id="condicionante_{{ index }}">
+                <h6>Condicionante {{ index }}</h6>
+                <input type="text" class="form-control mb-2" name="condicionante_descricao[]" value="{{ condicionante.descricao }}" required>
+                <input type="text" class="form-control mb-2" name="prazo_cumprimento[]" value="{{ condicionante.prazo_cumprimento }}">
+                <input type="date" class="form-control mb-2" name="meta_execucao[]" value="{{ condicionante.meta_execucao.strftime('%Y-%m-%d') if condicionante.meta_execucao else '' }}">
+                <select class="form-select mb-2" name="situacao[]">
+                    <option value="Iniciado" {% if condicionante.situacao == 'Iniciado' %}selected{% endif %}>Iniciado</option>
+                    <option value="Em andamento" {% if condicionante.situacao == 'Em andamento' %}selected{% endif %}>Em andamento</option>
+                    <option value="Concluído" {% if condicionante.situacao == 'Concluído' %}selected{% endif %}>Concluído</option>
+                </select>
+                <button type="button" onclick="removerCondicionante({{ index }})" class="btn btn-danger btn-sm">Remover</button>
+            </div>
+            {% endfor %}
         </div>
-        <div class="mb-3">
-            <label for="prazo_cumprimento" class="form-label">Prazo de Cumprimento</label>
-            <input type="text" class="form-control" id="prazo_cumprimento" name="prazo_cumprimento" value="{{ licenca.prazo_cumprimento }}">
-        </div>
-        <div class="mb-3">
-            <label for="status" class="form-label">Status</label>
-            <input type="text" class="form-control" id="status" name="status" value="{{ licenca.status }}">
-        </div>
+        <button type="button" onclick="adicionarCondicionante()" class="btn btn-secondary btn-sm">Adicionar Condicionante</button>
+        
         <div class="mb-3">
             <label for="observacoes" class="form-label">Observações</label>
             <textarea class="form-control" id="observacoes" name="observacoes">{{ licenca.observacoes }}</textarea>
         </div>
-        <button type="submit" class="btn btn-success">Salvar Alterações</button>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancelar</a>
+        
+        <div class="d-flex justify-content-end gap-2">
+            <button type="submit" class="btn btn-success">Salvar Alterações</button>
+            <a href="{{ url_for('list_licenses') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
     </form>
 </div>
+
+<script>
+let contador = {{ licenca.condicionantes|length + 1 }};
+function adicionarCondicionante() {
+    let div = document.createElement("div");
+    div.classList.add("border", "p-3", "rounded", "mb-2");
+    div.setAttribute("id", `condicionante_${contador}`);
+    div.innerHTML = `
+        <h6>Condicionante ${contador}</h6>
+        <input type="text" class="form-control mb-2" name="condicionante_descricao[]" required>
+        <input type="text" class="form-control mb-2" name="prazo_cumprimento[]">
+        <input type="date" class="form-control mb-2" name="meta_execucao[]">
+        <select class="form-select mb-2" name="situacao[]">
+            <option value="Iniciado">Iniciado</option>
+            <option value="Em andamento">Em andamento</option>
+            <option value="Concluído">Concluído</option>
+        </select>
+        <button type="button" onclick="removerCondicionante(${contador})" class="btn btn-danger btn-sm">Remover</button>
+    `;
+    document.getElementById("condicionantes").appendChild(div);
+    contador++;
+}
+
+function removerCondicionante(id) {
+    document.getElementById(`condicionante_${id}`).remove();
+}
+</script>
 {% endblock %}
