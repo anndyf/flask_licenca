@@ -22,6 +22,10 @@
             text-align: center;
             width: 350px;
         }
+        .logo {
+            width: 300px;
+            margin-bottom: 15px;
+        }
         h2 {
             margin-bottom: 15px;
             font-size: 24px;
@@ -32,7 +36,7 @@
             margin-bottom: 20px;
         }
         input {
-            width: 100%;
+            width: 300px;
             padding: 10px;
             margin: 10px 0;
             border: 1px solid #ccc;
@@ -57,9 +61,10 @@
 </head>
 <body>
     <div class="login-container">
+        <img src="/static/logo.png" alt="Logo da Empresa" class="logo">
         <h2>Bem-vindo ao Sistema de Licenças Ambientais</h2>
         <form method="POST">
-            <input type="text" name="username" placeholder="Usuário" required>
+            <input type="text" name="username" placeholder="Usuário" required>  
             <input type="password" name="password" placeholder="Senha" required>
             <button type="submit">Entrar</button>
         </form>

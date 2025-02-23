@@ -36,6 +36,7 @@ class User(db.Model, UserMixin):
 class Licenca(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     empresa = db.Column(db.String(200), nullable=False)
+    email_empresa = db.Column(db.String(255), nullable=True)
     ato = db.Column(db.String(200), nullable=False)
     portaria = db.Column(db.String(50), nullable=False)
     data_publicacao = db.Column(db.Date, nullable=False)

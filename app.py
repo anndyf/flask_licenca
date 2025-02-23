@@ -1,21 +1,21 @@
-# Supondo que Licenca seja o modelo das licenças
-from models import Licenca, Condicionante
-from flask_login import login_required
-from flask import Flask, render_template, request, redirect, url_for, flash, request
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from datetime import datetime, timedelta
 from config import Config
-from models import db, User, Licenca
+from models import db, User, Licenca, Condicionante
 from flask_paginate import Pagination, get_page_parameter
 from werkzeug.utils import secure_filename
 import os
 import pandas as pd
 from pathlib import Path
+from extensions import mail  
+from email_service import enviar_email_vencimento
+from flask_apscheduler import APScheduler
 
-
+scheduler = APScheduler()
 ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
 
 # Inicializando a aplicação Flask
@@ -29,6 +29,7 @@ bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 migrate = Migrate(app, db)
+mail.init_app(app)
 
 
 @login_manager.user_loader
@@ -122,6 +123,7 @@ def cadastrar_licenca():
             # Criar a licença
             nova_licenca = Licenca(
                 empresa=request.form['empresa'],
+                email_empresa=request.form['email_empresa'],
                 ato=request.form['ato'],
                 portaria=request.form['portaria'],
                 data_publicacao=datetime.strptime(
@@ -252,6 +254,7 @@ def editar_licenca(id):
 
     if request.method == 'POST':
         licenca.empresa = request.form['empresa']
+        licenca.email_empresa = request.form['email_empresa'] 
         licenca.ato = request.form['ato']
         licenca.portaria = request.form['portaria']
         licenca.data_publicacao = datetime.strptime(
@@ -461,6 +464,28 @@ def upload_licencas():
 
     flash('Formato de arquivo inválido. Envie um arquivo .xls ou .xlsx.', 'danger')
     return redirect(request.referrer)
+
+# -------------------- ENVIO DE EMAIL --------------------
+def verificar_licencas_vencendo():
+    hoje = datetime.today()
+    proximos_30_dias = hoje + timedelta(days=30)
+
+    licencas_vencendo = Licenca.query.filter(Licenca.vencimento <= proximos_30_dias, Licenca.vencimento >= hoje).all()
+
+    for licenca in licencas_vencendo:
+        dias_para_vencimento = (licenca.vencimento - hoje.date()).days
+        
+        # Enviar email apenas se faltarem 30, 25, 20, 15, 10, 5, ou 0 dias para o vencimento
+        if dias_para_vencimento % 5 == 0 or dias_para_vencimento == 0:
+            enviar_email_vencimento(licenca)  # Envia o e-mail
+
+@scheduler.task('interval', hours=24)  # Executa a cada 24 horas
+def job_verificar_licencas():
+    verificar_licencas_vencendo()
+
+scheduler.init_app(app)
+scheduler.start()
+
 # -------------------- EXECUÇÃO DO SERVIDOR --------------------
 
 
