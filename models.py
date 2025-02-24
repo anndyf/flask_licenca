@@ -35,22 +35,28 @@ class User(db.Model, UserMixin):
 
 class Licenca(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    empresa = db.Column(db.String(200), nullable=False)
-    email_empresa = db.Column(db.String(255), nullable=True)
-    ato = db.Column(db.String(200), nullable=False)
-    portaria = db.Column(db.String(50), nullable=False)
+    empresa = db.Column(db.String(255), nullable=False)
+    email_empresa = db.Column(db.String(255), nullable=False)
+    ato = db.Column(db.String(100), nullable=False)
+    portaria = db.Column(db.String(100), nullable=False)
     data_publicacao = db.Column(db.Date, nullable=False)
     vencimento = db.Column(db.Date, nullable=False)
     observacoes = db.Column(db.Text, nullable=True)
+    # Corrigindo o relacionamento para evitar conflito de nomes
+    condicionantes = db.relationship("Condicionante", back_populates="licenca", cascade="all, delete-orphan")
 
-    # Relacionamento com as Condicionantes
-    condicionantes = db.relationship('Condicionante', backref='licenca', lazy=True)
 
 
 class Condicionante(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    licenca_id = db.Column(db.Integer, db.ForeignKey('licenca.id'), nullable=False)
+    licenca_id = db.Column(db.Integer, db.ForeignKey('licenca.id', ondelete="CASCADE"), nullable=False)
     descricao = db.Column(db.Text, nullable=False)
-    prazo_cumprimento = db.Column(db.String(100), nullable=True)
+    prazo_cumprimento = db.Column(db.Date, nullable=True)
     meta_execucao = db.Column(db.Date, nullable=True)
-    situacao = db.Column(db.String(50), nullable=True)  # Ex: Iniciado, Em andamento, Concluído
+    situacao = db.Column(db.String(50), nullable=False)
+    alerta = db.Column(db.Boolean, default=False)
+
+    # Aqui ajustamos para evitar conflito
+    licenca = db.relationship("Licenca", back_populates="condicionantes")
+
+

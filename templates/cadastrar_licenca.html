@@ -45,36 +45,41 @@
 </div>
 
 <script>
-let contador = 1;
-function adicionarCondicionante() {
-    let div = document.createElement("div");
-    div.classList.add("mb-3");
-    div.setAttribute("id", `condicionante_${contador}`);
-    div.innerHTML = `
-        <h5>Condicionante ${contador}</h5>
-        <label class="form-label">Condicionante</label>
-        <input type="text" class="form-control" name="condicionante_descricao[]" required>
-        
-        <label class="form-label">Prazo de Cumprimento</label>
-        <input type="text" class="form-control" name="prazo_cumprimento[]">
-        
-        <label class="form-label">Meta de Execução</label>
-        <input type="date" class="form-control" name="meta_execucao[]">
-        
-        <label class="form-label">Situação</label>
-        <select class="form-select" name="situacao[]">
-            <option value="Iniciado">Iniciado</option>
-            <option value="Em andamento">Em andamento</option>
-            <option value="Concluído">Concluído</option>
-        </select>
-        <button type="button" onclick="removerCondicionante(${contador})" class="btn btn-danger mt-2">Remover</button>
-    `;
-    document.getElementById("condicionantes").appendChild(div);
-    contador++;
-}
-
-function removerCondicionante(id) {
-    document.getElementById(`condicionante_${id}`).remove();
-}
+    let contador = 1;
+    function adicionarCondicionante() {
+        let div = document.createElement("div");
+        div.classList.add("mb-3");
+        div.setAttribute("id", `condicionante_${contador}`);
+        div.innerHTML = `
+            <h5>Condicionante ${contador}</h5>
+            <label class="form-label">Condicionante</label>
+            <input type="text" class="form-control" name="condicionante_descricao[]" required>
+            
+            <label class="form-label">Prazo de Cumprimento</label>
+            <input type="date" class="form-control" name="prazo_cumprimento[]" required>
+            
+            <label class="form-label">Meta de Execução</label>
+            <input type="date" class="form-control" name="meta_execucao[]">
+            
+            <label class="form-label">Situação</label>
+            <select class="form-select" name="situacao[]">
+                <option value="Iniciado">Iniciado</option>
+                <option value="Em andamento">Em andamento</option>
+                <option value="Concluído">Concluído</option>
+                <option value="Não realizado">Não realizado</option>
+            </select>
+            
+            <label class="form-label">Gerar alerta?</label>
+            <input type="checkbox" name="alerta[]" value="true">
+            
+            <button type="button" onclick="removerCondicionante(${contador})" class="btn btn-danger mt-2">Remover</button>
+        `;
+        document.getElementById("condicionantes").appendChild(div);
+        contador++;
+    }
+    
+    function removerCondicionante(id) {
+        document.getElementById(`condicionante_${id}`).remove();
+    }
 </script>
 {% endblock %}

@@ -14,6 +14,7 @@ from pathlib import Path
 from extensions import mail  
 from email_service import enviar_email_vencimento
 from flask_apscheduler import APScheduler
+from sqlalchemy import cast, Date
 
 scheduler = APScheduler()
 ALLOWED_EXTENSIONS = {'xls', 'xlsx'}
@@ -69,7 +70,6 @@ def logout():
 
 # -------------------- DASHBOARD --------------------
 
-
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -88,12 +88,11 @@ def dashboard():
     # Contar licenças expiradas (já passaram da data de vencimento)
     expiradas = Licenca.query.filter(Licenca.vencimento < hoje).count()
 
-    # Lista de licenças próximas ao vencimento com status ajustado
+    # Lista de licenças próximas ao vencimento
     licencas_vencendo = []
     for licenca in Licenca.query.filter(Licenca.vencimento <= hoje + timedelta(days=30)).all():
         dias_restantes = (licenca.vencimento - hoje).days
 
-        # Definir status correto para cada licença
         if dias_restantes > 0:
             licenca.status = "Próxima ao Vencimento"
         elif dias_restantes == 0:
@@ -101,72 +100,112 @@ def dashboard():
         else:
             licenca.status = "Expirado"
 
-        licenca.dias_restantes = dias_restantes  # Armazena para exibição
+        licenca.dias_restantes = dias_restantes
         licencas_vencendo.append(licenca)
+
+    # 🔹 NOVA CONSULTA PARA PEGAR CONDICIONANTES PRÓXIMAS E VENCIDAS
+    condicionantes_alerta = Condicionante.query.filter(
+        Condicionante.alerta == True,
+        Condicionante.prazo_cumprimento <= hoje + timedelta(days=30)
+    ).all()
+
+    condicionantes_vencidas = Condicionante.query.filter(
+        Condicionante.alerta == True,
+        Condicionante.prazo_cumprimento < hoje  # 🔥 Vencidas!
+    ).all()
 
     return render_template(
         'dashboard.html',
         licencas_vencendo=licencas_vencendo,
         total_licencas=total_licencas,
         vencendo_breve=vencendo_breve,
-        expiradas=expiradas
+        expiradas=expiradas,
+        condicionantes_alerta=condicionantes_alerta,
+        condicionantes_vencidas=condicionantes_vencidas
     )
 
+
+
 # -------------------- CADASTRO DE LICENÇAS --------------------
-
-
 @app.route('/cadastrar_licenca', methods=['GET', 'POST'])
 @login_required
 def cadastrar_licenca():
     if request.method == 'POST':
         try:
-            # Criar a licença
+            empresa = request.form.get('empresa')
+            email_empresa = request.form.get('email_empresa')
+            ato = request.form.get('ato')
+            portaria = request.form.get('portaria')
+            data_publicacao = request.form.get('data_publicacao')
+            vencimento = request.form.get('vencimento')
+            observacoes = request.form.get('observacoes', '')
+
+            # Verificar se os campos obrigatórios estão preenchidos
+            if not all([empresa, email_empresa, ato, portaria, data_publicacao, vencimento]):
+                flash("Todos os campos obrigatórios devem ser preenchidos.", "danger")
+                return render_template('cadastrar_licenca.html')
+
+            # Converter datas
+            data_publicacao = datetime.strptime(data_publicacao, '%Y-%m-%d').date()
+            vencimento = datetime.strptime(vencimento, '%Y-%m-%d').date()
+
+            # Criar a nova licença
             nova_licenca = Licenca(
-                empresa=request.form['empresa'],
-                email_empresa=request.form['email_empresa'],
-                ato=request.form['ato'],
-                portaria=request.form['portaria'],
-                data_publicacao=datetime.strptime(
-                    request.form['data_publicacao'], "%Y-%m-%d"),
-                vencimento=datetime.strptime(
-                    request.form['vencimento'], "%Y-%m-%d"),
-                observacoes=request.form.get('observacoes', '')
+                empresa=empresa,
+                email_empresa=email_empresa,
+                ato=ato,
+                portaria=portaria,
+                data_publicacao=data_publicacao,
+                vencimento=vencimento,
+                observacoes=observacoes
             )
             db.session.add(nova_licenca)
             db.session.commit()
 
-            # Recuperar dados das condicionantes
+            # Capturar condicionantes
             descricoes = request.form.getlist('condicionante_descricao[]')
             prazos = request.form.getlist('prazo_cumprimento[]')
             metas = request.form.getlist('meta_execucao[]')
             situacoes = request.form.getlist('situacao[]')
-
-            print("Descrições recebidas:", descricoes)  # Debug
+            alertas = request.form.getlist('alerta[]')  # Agora corretamente capturado como array
 
             for i in range(len(descricoes)):
-                if descricoes[i]:  # Evita salvar condicionantes vazias
+                if descricoes[i]:  # Garantir que não está vazio
                     nova_condicionante = Condicionante(
                         licenca_id=nova_licenca.id,
                         descricao=descricoes[i],
-                        prazo_cumprimento=prazos[i] if i < len(
-                            prazos) else None,
-                        meta_execucao=datetime.strptime(
-                            metas[i], "%Y-%m-%d") if metas[i] else None,
-                        situacao=situacoes[i] if i < len(situacoes) else None
+                        prazo_cumprimento=datetime.strptime(prazos[i], "%Y-%m-%d").date() if prazos[i] else None,
+                        meta_execucao=datetime.strptime(metas[i], "%Y-%m-%d").date() if metas[i] else None,
+                        situacao=situacoes[i] if i < len(situacoes) else "Iniciado",
+                        alerta=True if str(i+1) in alertas else False  # Corrigindo para capturar checkboxes
                     )
                     db.session.add(nova_condicionante)
 
             db.session.commit()
-            flash('Licença cadastrada com sucesso!', 'success')
+            flash("Licença cadastrada com sucesso!", "success")
             return redirect(url_for('dashboard'))
 
         except Exception as e:
-            print("Erro ao cadastrar licença:", e)  # Debug
+            flash(f"Erro ao cadastrar licença: {str(e)}", "danger")
             db.session.rollback()
-            flash('Erro ao cadastrar licença.', 'danger')
 
     return render_template('cadastrar_licenca.html')
 
+
+# -------------------- ALERTA DE CONDICIONANTES --------------------
+from sqlalchemy import cast, Date
+
+def verificar_condicionantes_alerta():
+    hoje = datetime.today().date()
+    proximos_15_dias = hoje + timedelta(days=15)  # Definimos alerta para 15 dias antes
+
+    condicionantes_alerta = Condicionante.query.filter(
+        Condicionante.alerta == True,  # Apenas condicionantes que devem gerar alerta
+        cast(Condicionante.prazo_cumprimento, Date) <= proximos_15_dias,  # Conversão explícita
+        cast(Condicionante.prazo_cumprimento, Date) >= hoje
+    ).all()
+
+    return condicionantes_alerta
 
 # -------------------- GERENCIAMENTO DE USUÁRIOS --------------------
 
@@ -245,51 +284,56 @@ def admin_trocar_senha(user_id):
     return render_template('admin_trocar_senha.html', user=user)
 
 # -------------------- EDITAR LICENCAS --------------------
-
-
 @app.route('/editar_licenca/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar_licenca(id):
     licenca = Licenca.query.get_or_404(id)
 
     if request.method == 'POST':
-        licenca.empresa = request.form['empresa']
-        licenca.email_empresa = request.form['email_empresa'] 
-        licenca.ato = request.form['ato']
-        licenca.portaria = request.form['portaria']
-        licenca.data_publicacao = datetime.strptime(
-            request.form['data_publicacao'], "%Y-%m-%d")
-        licenca.vencimento = datetime.strptime(
-            request.form['vencimento'], "%Y-%m-%d")
-        licenca.observacoes = request.form.get('observacoes', '')
+        try:
+            # Atualiza os dados da licença
+            licenca.empresa = request.form['empresa']
+            licenca.ato = request.form['ato']
+            licenca.portaria = request.form['portaria']
+            licenca.data_publicacao = datetime.strptime(
+                request.form['data_publicacao'], '%Y-%m-%d')
+            licenca.vencimento = datetime.strptime(
+                request.form['vencimento'], '%Y-%m-%d')
+            licenca.status = request.form.get('status', 'Ativa')
+            licenca.observacoes = request.form.get('observacoes', '')
 
-        # Removendo condicionantes antigas e inserindo novas
-        Condicionante.query.filter_by(licenca_id=id).delete()
-        db.session.commit()
+            # Remover condicionantes antigas antes de inserir as novas
+            Condicionante.query.filter_by(licenca_id=id).delete()
+            db.session.commit()
 
-        descricoes = request.form.getlist('condicionante_descricao[]')
-        prazos = request.form.getlist('prazo_cumprimento[]')
-        metas = request.form.getlist('meta_execucao[]')
-        situacoes = request.form.getlist('situacao[]')
+            descricoes = request.form.getlist('condicionante_descricao[]')
+            prazos = request.form.getlist('prazo_cumprimento[]')
+            metas = request.form.getlist('meta_execucao[]')  # 🔹 PEGANDO META DE EXECUÇÃO
+            situacoes = request.form.getlist('situacao[]')
 
-        for i in range(len(descricoes)):
-            if descricoes[i]:
-                nova_condicionante = Condicionante(
-                    licenca_id=id,
-                    descricao=descricoes[i],
-                    prazo_cumprimento=prazos[i] if i < len(prazos) else None,
-                    meta_execucao=datetime.strptime(
-                        metas[i], "%Y-%m-%d") if metas[i] else None,
-                    situacao=situacoes[i] if i < len(situacoes) else None
-                )
-                db.session.add(nova_condicionante)
+            for i in range(len(descricoes)):
+                if descricoes[i]:  # Evita adicionar campos vazios
+                    nova_condicionante = Condicionante(
+                        licenca_id=id,
+                        descricao=descricoes[i],
+                        prazo_cumprimento=datetime.strptime(
+                            prazos[i], "%Y-%m-%d") if prazos[i] else None,
+                        meta_execucao=datetime.strptime(
+                            metas[i], "%Y-%m-%d") if metas[i] else None,  # 🔹 CORREÇÃO AQUI
+                        situacao=situacoes[i] if i < len(situacoes) else "Não realizado",
+                        alerta=True  # Define que a condicionante gerará alerta
+                    )
+                    db.session.add(nova_condicionante)
 
-        db.session.commit()
-        flash('Licença atualizada com sucesso!', 'success')
-        return redirect(url_for('list_licenses'))
+            db.session.commit()
+            flash('Licença atualizada com sucesso!', 'success')
+            return redirect(url_for('list_licenses'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao atualizar licença: {str(e)}", "danger")
 
     return render_template('editar_licenca.html', licenca=licenca, enumerate=enumerate)
-
 
 # -------------------- LISTAR LICENCAS --------------------
 

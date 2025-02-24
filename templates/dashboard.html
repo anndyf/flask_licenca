@@ -5,7 +5,7 @@
     <div class="row">
         <div class="col-lg-12 text-center">
             <img src="/static/logo.png" alt="Lima - Consultoria Ambiental" class="img-fluid mb-3" style="max-height: 200px;">
-            <h2 class="fw-bold mb-4 text-success">Sistema de Monitoramento de Licencas Ambientais</h2>
+            <h2 class="fw-bold mb-4 text-success">Sistema de Monitoramento de Licenças Ambientais</h2>
         </div>
     </div>
 
@@ -37,6 +37,7 @@
         </div>
     </div>
 
+    <!-- Licenças Próximas do Vencimento -->
     <div class="row mt-5">
         <div class="col-lg-12">
             <div class="card shadow-sm border-0 rounded-lg p-4">
@@ -84,6 +85,82 @@
             </div>
         </div>
     </div>
+
+    <!-- 🔹 Condicionantes Próximas do Vencimento -->
+<div class="row mt-5">
+    <div class="col-lg-12">
+        <div class="card shadow-sm border-0 rounded-lg p-4">
+            <h5 class="fw-bold mb-3 text-warning">⚠️ Condicionantes Próximas do Vencimento</h5>
+            {% if condicionantes_alerta %}
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Licença</th>
+                            <th>Prazo de Cumprimento</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for condicionante in condicionantes_alerta %}
+                        <tr>
+                            <td>{{ condicionante.descricao }}</td>
+                            <td>{{ condicionante.licenca.empresa }}</td>
+                            <td>{{ condicionante.prazo_cumprimento.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <span class="badge bg-warning">Em Prazo</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-muted text-center">✅ Nenhuma condicionante próxima do vencimento.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 🔥 Condicionantes Vencidas -->
+<div class="row mt-5">
+    <div class="col-lg-12">
+        <div class="card shadow-sm border-0 rounded-lg p-4">
+            <h5 class="fw-bold mb-3 text-danger">❌ Condicionantes Vencidas</h5>
+            {% if condicionantes_vencidas %}
+            <div class="table-responsive">
+                <table class="table align-middle table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Descrição</th>
+                            <th>Licença</th>
+                            <th>Prazo de Cumprimento</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for condicionante in condicionantes_vencidas %}
+                        <tr>
+                            <td>{{ condicionante.descricao }}</td>
+                            <td>{{ condicionante.licenca.empresa }}</td>
+                            <td>{{ condicionante.prazo_cumprimento.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <span class="badge bg-danger">Vencida</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+                <p class="text-muted text-center">✅ Nenhuma condicionante vencida.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
 </div>
 
 <style>
