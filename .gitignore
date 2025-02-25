@@ -4,5 +4,3 @@ __pycache__/
 *.pyo
 *.log
 instance/
-.env
-config.py
