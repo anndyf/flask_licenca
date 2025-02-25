@@ -32,33 +32,38 @@
         
         <h5 class="text-secondary">Condicionantes</h5>
         <div id="condicionantes">
-            {% for index, condicionante in enumerate(licenca.condicionantes, start=1) %}
-            <div class="border p-3 rounded mb-2" id="condicionante_{{ index }}">
-                <h6 class="fw-bold">Condicionante {{ index }}</h6>
-                
-                <label for="descricao_{{ index }}" class="form-label">Descrição</label>
-                <input type="text" class="form-control mb-2" id="descricao_{{ index }}" name="condicionante_descricao[]" value="{{ condicionante.descricao }}" required>
+            {% if licenca.condicionantes %}
+                {% for index, condicionante in enumerate(licenca.condicionantes, start=1) %}
+                <div class="border p-3 rounded mb-2" id="condicionante_{{ index }}">
+                    <h6 class="fw-bold">Condicionante {{ index }}</h6>
+                    
+                    <label for="descricao_{{ index }}" class="form-label">Descrição</label>
+                    <input type="text" class="form-control mb-2" id="descricao_{{ index }}" name="condicionante_descricao[]" value="{{ condicionante.descricao }}" required>
 
-                <label for="prazo_cumprimento_{{ index }}" class="form-label">Prazo de Cumprimento</label>
-                <input type="date" class="form-control mb-2" id="prazo_cumprimento_{{ index }}" name="prazo_cumprimento[]" value="{{ condicionante.prazo_cumprimento.strftime('%Y-%m-%d') if condicionante.prazo_cumprimento else '' }}">
-                
-                <label for="meta_execucao_{{ index }}" class="form-label">Meta de Execução</label>
-                <input type="date" class="form-control mb-2" id="meta_execucao_{{ index }}" name="meta_execucao[]" value="{{ condicionante.meta_execucao.strftime('%Y-%m-%d') if condicionante.meta_execucao else '' }}">
-                
-                <label for="situacao_{{ index }}" class="form-label">Situação</label>
-                <select class="form-select mb-2" id="situacao_{{ index }}" name="situacao[]">
-                    <option value="Iniciado" {% if condicionante.situacao == 'Iniciado' %}selected{% endif %}>Iniciado</option>
-                    <option value="Em andamento" {% if condicionante.situacao == 'Em andamento' %}selected{% endif %}>Em andamento</option>
-                    <option value="Concluído" {% if condicionante.situacao == 'Concluído' %}selected{% endif %}>Concluído</option>
-                    <option value="Não realizado" {% if condicionante.situacao == 'Não realizado' %}selected{% endif %}>Não realizado</option>
-                </select>
-                
-                <label class="form-label">Gerar alerta?</label>
-                <input type="checkbox" name="alerta_{{ index }}" value="true" {% if condicionante.alerta %}checked{% endif %}>
+                    <label for="prazo_cumprimento_{{ index }}" class="form-label">Prazo de Cumprimento</label>
+                    <input type="date" class="form-control mb-2" id="prazo_cumprimento_{{ index }}" name="prazo_cumprimento[]" value="{{ condicionante.prazo_cumprimento.strftime('%Y-%m-%d') if condicionante.prazo_cumprimento else '' }}">
+                    
+                    <label for="meta_execucao_{{ index }}" class="form-label">Meta de Execução</label>
+                    <input type="date" class="form-control mb-2" id="meta_execucao_{{ index }}" name="meta_execucao[]" value="{{ condicionante.meta_execucao.strftime('%Y-%m-%d') if condicionante.meta_execucao else '' }}">
+                    
+                    <label for="situacao_{{ index }}" class="form-label">Situação</label>
+                    <select class="form-select mb-2" id="situacao_{{ index }}" name="situacao[]">
+                        <option value="Iniciado" {% if condicionante.situacao == 'Iniciado' %}selected{% endif %}>Iniciado</option>
+                        <option value="Em andamento" {% if condicionante.situacao == 'Em andamento' %}selected{% endif %}>Em andamento</option>
+                        <option value="Concluído" {% if condicionante.situacao == 'Concluído' %}selected{% endif %}>Concluído</option>
+                        <option value="Não realizado" {% if condicionante.situacao == 'Não realizado' %}selected{% endif %}>Não realizado</option>
+                    </select>
+                    
+                    <label class="form-label">Gerar alerta?</label>
+                    <input type="checkbox" name="alerta_{{ index }}" value="true" {% if condicionante.alerta %}checked{% endif %}>
+                    <input type="hidden" name="alerta_hidden_{{ index }}" value="false">
 
-                <button type="button" onclick="removerCondicionante({{ index }})" class="btn btn-danger btn-sm mt-2">Remover</button>
-            </div>
-            {% endfor %}
+                    <button type="button" onclick="removerCondicionante({{ index }})" class="btn btn-danger btn-sm mt-2">Remover</button>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Nenhuma condicionante cadastrada.</p>
+            {% endif %}
         </div>
 
         <button type="button" onclick="adicionarCondicionante()" class="btn btn-secondary btn-sm">Adicionar Condicionante</button>
@@ -103,6 +108,7 @@
 
             <label class="form-label">Gerar alerta?</label>
             <input type="checkbox" name="alerta_${contador}" value="true">
+            <input type="hidden" name="alerta_hidden_${contador}" value="false">
 
             <button type="button" onclick="removerCondicionante(${contador})" class="btn btn-danger btn-sm mt-2">Remover</button>
         `;

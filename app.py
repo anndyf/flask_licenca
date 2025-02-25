@@ -308,20 +308,21 @@ def editar_licenca(id):
 
             descricoes = request.form.getlist('condicionante_descricao[]')
             prazos = request.form.getlist('prazo_cumprimento[]')
-            metas = request.form.getlist('meta_execucao[]')  # 🔹 PEGANDO META DE EXECUÇÃO
+            metas = request.form.getlist('meta_execucao[]')
             situacoes = request.form.getlist('situacao[]')
 
             for i in range(len(descricoes)):
                 if descricoes[i]:  # Evita adicionar campos vazios
+                    alerta = request.form.get(f'alerta_{i+1}', 'false') == 'true'
                     nova_condicionante = Condicionante(
                         licenca_id=id,
                         descricao=descricoes[i],
                         prazo_cumprimento=datetime.strptime(
                             prazos[i], "%Y-%m-%d") if prazos[i] else None,
                         meta_execucao=datetime.strptime(
-                            metas[i], "%Y-%m-%d") if metas[i] else None,  # 🔹 CORREÇÃO AQUI
+                            metas[i], "%Y-%m-%d") if metas[i] else None,
                         situacao=situacoes[i] if i < len(situacoes) else "Não realizado",
-                        alerta=True  # Define que a condicionante gerará alerta
+                        alerta=alerta  # 🔹 Agora aceita remover o alerta
                     )
                     db.session.add(nova_condicionante)
 
@@ -334,6 +335,7 @@ def editar_licenca(id):
             flash(f"Erro ao atualizar licença: {str(e)}", "danger")
 
     return render_template('editar_licenca.html', licenca=licenca, enumerate=enumerate)
+
 
 # -------------------- LISTAR LICENCAS --------------------
 

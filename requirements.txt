@@ -9,3 +9,5 @@ Werkzeug==2.3.7
 Flask-Paginate==2023.8.25
 pandas==2.0.3
 openpyxl==3.1.2
+Flask-Mail==0.9.1
+Flask-APScheduler==1.12.3
